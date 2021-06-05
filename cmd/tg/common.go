@@ -10,9 +10,30 @@ import (
 	"github.com/gotd/td/telegram/message/styling"
 )
 
+// commonFlags returns common flags for all commands.
+func commonFlags() []cli.Flag {
+	return []cli.Flag{
+		&cli.StringFlag{
+			Name:    "config",
+			Aliases: []string{"c"},
+			Value:   defaultConfigPath(),
+			Usage:   "config to use",
+		},
+		&cli.BoolFlag{
+			Name:  "debug-invoker",
+			Usage: "use pretty-printing debug invoker",
+		},
+		&cli.BoolFlag{
+			Name:    "test",
+			Aliases: []string{"staging"},
+			Usage:   "connect to telegram test server",
+		},
+	}
+}
+
 // messageFlags returns common flags for send and upload.
 func messageFlags() []cli.Flag {
-	return []cli.Flag{
+	return append([]cli.Flag{
 		&cli.BoolFlag{
 			Name:  "html",
 			Usage: "use HTML styling",
@@ -29,7 +50,7 @@ func messageFlags() []cli.Flag {
 			Name:  "schedule",
 			Usage: "scheduled message date for scheduled messages",
 		},
-	}
+	}, commonFlags()...)
 }
 
 func applyMessageFlags(

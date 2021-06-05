@@ -11,9 +11,10 @@ import (
 )
 
 type Config struct {
-	AppID    int    `yaml:"app_id"`
-	AppHash  string `yaml:"app_hash"`
-	BotToken string `yaml:"bot_token"`
+	Version int    `yaml:"version"`
+	AppID   int    `yaml:"app_id"`
+	AppHash string `yaml:"app_hash"`
+	Session string `yaml:"session"`
 }
 
 func defaultConfigPath() string {
@@ -30,34 +31,37 @@ func main() {
 	app := &cli.App{
 		Name:  "tg",
 		Usage: "Telegram CLI",
-		Flags: []cli.Flag{
-			&cli.StringFlag{
-				Name:    "config",
-				Aliases: []string{"c"},
-				Value:   defaultConfigPath(),
-				Usage:   "config to use",
-			},
-			&cli.BoolFlag{
-				Name:  "debug-invoker",
-				Usage: "use pretty-printing debug invoker",
-			},
-			&cli.BoolFlag{
-				Name:    "test",
-				Aliases: []string{"staging"},
-				Usage:   "connect to telegram test server",
-			},
-		},
-
 		Commands: []*cli.Command{
 			{
 				Name:  "init",
-				Usage: "Creates config file",
-				Description: `Command init creates config file at the given path.
-Example:
-	tg init --app-id 10 --app-hash abcd --token token
+				Usage: "Creates config and session",
+				Description: `Command init creates config file and session at the given path.
+Examples:
+	tg init bot --app-id 10 --app-hash abcd --token token
+	tg init user --app-id 10 --app-hash abcd --phone +123456789
 `,
-				Flags:  initFlags(),
-				Action: initCmd,
+				Subcommands: []*cli.Command{
+					{
+						Name:  "bot",
+						Usage: "Creates config file for bot",
+						Description: `Command bot creates config file using bot token at the given path.
+Example:
+	tg init bot --app-id 10 --app-hash abcd --token token
+`,
+						Flags:  initBotFlags(),
+						Action: initBotCmd,
+					},
+					{
+						Name:  "user",
+						Usage: "Creates config file for user",
+						Description: `Command user creates config file at the given path.
+Example:
+	tg init user --app-id 10 --app-hash abcd --phone +123456789
+`,
+						Flags:  initUserFlags(),
+						Action: initUserCmd,
+					},
+				},
 			},
 			{
 				Name:      "send",
@@ -77,7 +81,11 @@ Example:
 		},
 	}
 	for _, cmd := range app.Commands {
-		cmd.Before = p.Before
+		if cmd.Name != "init" {
+			cmd.Before = p.Before
+		}
+
+		cmd.Flags = append(cmd.Flags, app.Flags...)
 	}
 
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
